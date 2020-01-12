@@ -4,21 +4,76 @@ import React, { Component } from 'react';
 import '@gooddata/react-components/styles/css/main.css';
 
 import { ColumnChart } from '@gooddata/react-components';
+import SelectYear from './components/SelectYear';
+import SelectMonth from './components/SelectMonth';
+import buildTimePeriod from './libs/timeUtil';
 
-const grossProfitMeasure = '/gdc/md/xms7ga4tf3g3nzucd8380o2bev8oeknp/obj/6877';
-const dateAttributeInMonths = '/gdc/md/xms7ga4tf3g3nzucd8380o2bev8oeknp/obj/2142';
-const dateAttribute = '/gdc/md/xms7ga4tf3g3nzucd8380o2bev8oeknp/obj/2180';
+import {
+    PROJECT_ID,  
+    GROSS_PROFIT_MEASURE,  
+    DATE_ATTRIBUTE,
+    DATE_ATTRIBUTE_IN_MONTHS,
+    DEFAULT_MONTH,
+    DEFAULT_YEAR
+} from './config/consts';
+
 
 class App extends Component {
 
-    getMonthFilter() {
+    constructor(props){
+        super(props);
+
+        const defaultMonth = DEFAULT_MONTH;
+        const defaultYear = DEFAULT_YEAR;
+
+        const period = buildTimePeriod(defaultMonth, defaultYear);
+
+        this.state = {
+            month: defaultMonth,
+            year: defaultYear,
+            filters: [this.getMonthFilter(period.fromDate, period.toDate)]
+        };        
+       
+    }
+   
+    onYearChange = (year) => {
+        this.setState({           
+            year: year
+        }, function () {
+           
+            const period = buildTimePeriod(this.state.month,year);
+            console.log("From date: " + period.fromDate);
+            console.log("To date: " + period.toDate);
+            this.setState({
+                filters: [this.getMonthFilter(period.fromDate, period.toDate)]
+            })
+        });
+       
+    }
+
+    onMonthChange = (month) => {
+
+        this.setState({
+            month: month
+        }, function () {            
+            const period = buildTimePeriod(month,this.state.year);
+            console.log("From date: " + period.fromDate);
+            console.log("To date: " + period.toDate);
+            this.setState({
+                filters: [this.getMonthFilter(period.fromDate, period.toDate)]
+            })
+        });      
+    }
+
+    getMonthFilter(fromDate, toDate) {
+      
         return {
             absoluteDateFilter: {
                 dataSet: {
-                    uri: dateAttribute
+                    uri: DATE_ATTRIBUTE
                 },
-                from: '2016-01-01',
-                to: '2016-01-31'
+                from: fromDate,
+                to: toDate,
             }
 
         }
@@ -32,7 +87,7 @@ class App extends Component {
                     definition: {
                         measureDefinition: {
                             item: {
-                                uri: grossProfitMeasure
+                                uri: GROSS_PROFIT_MEASURE
                             }
                         }
                     },
@@ -47,45 +102,26 @@ class App extends Component {
             visualizationAttribute:
             {
                 displayForm: {
-                    uri: dateAttributeInMonths
+                    uri: DATE_ATTRIBUTE_IN_MONTHS
                 },
                 localIdentifier: 'a1'
             }
         }
     }
 
-    renderDropdown() {
-        return (
-            <select defaultValue="1">
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-            </select>
-        )
-    }
-
     render() {
-        const projectId = 'xms7ga4tf3g3nzucd8380o2bev8oeknp';
-        const filters = [this.getMonthFilter()];
+        const projectId = PROJECT_ID;
         const measures = this.getMeasures();
         const viewBy = this.getViewBy();
+        
 
         return (
             <div className="App">
-                <h1>$ Gross Profit in month {this.renderDropdown()} 2016</h1>
+                <h1>$ Gross Profit in month <SelectMonth onMonthChange={this.onMonthChange}/> <SelectYear onYearChange={this.onYearChange}/> </h1>
                 <div>
                     <ColumnChart
                         measures={measures}
-                        filters={filters}
+                        filters={this.state.filters}
                         projectId={projectId}
                     />
                 </div>
